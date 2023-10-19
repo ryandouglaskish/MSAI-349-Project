@@ -18,15 +18,14 @@ Weather APIs:
 
 OpenWeatherMap API:
 Offers a free tier with limited requests per minute. Provides current weather data, including wind speed, for a specific location.
-OpenWeatherMap API
+
 Weatherstack API:
 Provides a free tier with limited requests per month. Offers current weather data, including wind speed, for specific coordinates.
-Weatherstack API
+
 Tomorrow.io (Previously Climacell) API:
 Offers a limited free tier. Provides detailed weather data, including wind speed, at specific coordinates.
-Tomorrow.io API
+
 Weatherbit API:
 Offers a free tier with limited requests per day. Provides various weather data, including wind speed, based on coordinates.
-Weatherbit API
 
 
