@@ -1,12 +1,16 @@
 # MSAI-349-Project
 MSAI 349 Project
 
+**Presentation**
+https://www.canva.com/design/DAFzpGmENZg/FOb0DtVDwGCYJVrgP0NykQ/edit?utm_content=DAFzpGmENZg&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton
+
+
 **Proposal**
 https://docs.google.com/document/d/1IYJUmSu73XI9TKTmDDYlC044nFaLnFq91fTQpWOAZb4/edit
 
 ## To Do's
 ### General
-- [ ] Get Liam Lawson
+- [ ] Finalize driver of interest list (Liam Lawson?)
 - [ ] Access environment datasets
 
 
