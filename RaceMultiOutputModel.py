@@ -7,11 +7,8 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 
-
 from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader, SubsetRandomSampler
-
-
 
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
 from sklearn.metrics import accuracy_score
@@ -37,9 +34,11 @@ class RaceDataset(Dataset):
         return self.features[idx], self.labels[idx]
     
 
-class RaceMultiOutputModel(nn.Module):
+class RaceMultiOutputModel1(nn.Module):
+    '''Basic model -- linear predictions
+    '''
     def __init__(self):
-        super(RaceMultiOutputModel, self).__init__()
+        super(RaceMultiOutputModel1, self).__init__()
         self.fc1 = nn.Linear(240, 128)
         self.fc2 = nn.Linear(128, 128)
         self.fc3 = nn.Linear(128, 64)
@@ -52,6 +51,24 @@ class RaceMultiOutputModel(nn.Module):
         x = self.fc4(x)  # No activation, as this is a regression problem
         return x
 
+class RaceMultiOutputModel2(nn.Module):
+    '''This model applies sigmoid
+    '''
+    def __init__(self):
+        super(RaceMultiOutputModel2, self).__init__()
+        self.fc1 = nn.Linear(240, 128)
+        self.fc2 = nn.Linear(128, 128)
+        self.fc3 = nn.Linear(128, 64)
+        self.fc4 = nn.Linear(64, 24)  # Output layer: 24 driver positions
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = torch.relu(self.fc3(x))
+        x = self.fc4(x)  # No activation, as this is a regression problem
+        x = torch.sigmoid(x)
+        x = x * 25
+        return x
 
 
 #def custom_performance_metrics(true_pos, pred_pos):
@@ -68,10 +85,13 @@ if __name__ == "__main__":
     X_test = pd.read_csv('Data/RaceMultiOutPutModel/X_test.csv')
     y_test = pd.read_csv('Data/RaceMultiOutPutModel/Y_test.csv')
 
+    X_train.drop(['raceId'],axis=1, inplace=True)
+    y_train.drop(['raceId'],axis=1, inplace=True)
+    X_test.drop(['raceId'],axis=1, inplace=True)
+    y_test.drop(['raceId'],axis=1, inplace=True)
 
-
-    X_train = X_train[0:3].copy()
-    y_train = y_train[0:3].copy()
+    X_train = X_train[0:4].copy()
+    y_train = y_train[0:4].copy()
 
 
     
