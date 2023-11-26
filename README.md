@@ -43,3 +43,4 @@ Offers a free tier with limited requests per day. Provides various weather data,
 
 - https://github.com/willgeorge93/Formula1/blob/master/Formula%201%20-%20Data%20Collection.ipynb - weather data extraction from Ergast API
 - https://link.springer.com/content/pdf/10.1007/978-3-031-26438-2_11.pdf?pdf=inline%20link - general F1 analysis paper
+- https://f1-predictor.gjd.one/? - predictor model
