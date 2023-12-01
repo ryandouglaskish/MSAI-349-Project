@@ -122,6 +122,20 @@ class RaceMultiOutputModel4(nn.Module):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)  # Using raw scores for ranking
         return x
+    
+class RaceMultiOutputModel4Classification(nn.Module):
+    def __init__(self):
+            super(RaceMultiOutputModel4Classification, self).__init__()
+            self.fc1 = nn.Linear(24, 128)
+            self.fc2 = nn.Linear(128, 64)
+            self.fc3 = nn.Linear(64, 24)  # Output for 24 drivers
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)  # Using raw scores for ranking
+        #x = F.softmax(x, dim=1)
+        return x
 
 class RaceMultiOutputModel5(nn.Module):
     def __init__(self):
