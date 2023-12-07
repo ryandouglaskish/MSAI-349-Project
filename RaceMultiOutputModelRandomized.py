@@ -11,6 +11,8 @@ import torch.nn.functional as F
 from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader, SubsetRandomSampler
 
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
 from sklearn.metrics import accuracy_score
 
@@ -52,7 +54,6 @@ class TwoLayers(nn.Module):
         x = self.fc3(x)  # Using raw scores for ranking
         return x
 
-# Define the model
 class ThreeLayers(nn.Module):
     def __init__(self):
         super(ThreeLayers, self).__init__()
@@ -66,6 +67,55 @@ class ThreeLayers(nn.Module):
         x = torch.relu(self.fc2(x))  # ReLU activation function after second hidden layer
         x = torch.relu(self.fc3(x))  # ReLU activation function after third hidden layer
         x = self.fc4(x)              # No activation function in the output layer for regression
+        return x
+    
+class TwoLayersCoef(nn.Module):
+    def __init__(self):
+            super(TwoLayersCoef, self).__init__()
+            self.fc1 = nn.Linear(24+24*5, 128)
+            self.fc2 = nn.Linear(128, 64)
+            self.fc3 = nn.Linear(64, 24)  # Output for 24 drivers
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)  # Using raw scores for ranking
+        return x
+
+class ThreeLayersCoef(nn.Module):
+    def __init__(self):
+        super(ThreeLayersCoef, self).__init__()
+        self.fc1 = nn.Linear(24+24*5, 128)
+        self.fc2 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, 32)
+        self.fc4 = nn.Linear(32, 24)
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))  # ReLU activation function after first hidden layer
+        x = torch.relu(self.fc2(x))  # ReLU activation function after second hidden layer
+        x = torch.relu(self.fc3(x))  # ReLU activation function after third hidden layer
+        x = self.fc4(x)              # No activation function in the output layer for regression
+        return x
+    
+class CoefThreeLayersDropoutClassification(nn.Module):
+    def __init__(self, dropout_rate=0.5):
+        super(CoefThreeLayersDropoutClassification, self).__init__()
+        self.fc1 = nn.Linear(24+24*5, 128) 
+        self.dropout1 = nn.Dropout(dropout_rate)  # Dropout layer after first fully connected layer
+        self.fc2 = nn.Linear(128, 64)
+        self.dropout2 = nn.Dropout(dropout_rate)  # Dropout layer after second fully connected layer
+        self.fc3 = nn.Linear(64, 32)
+        self.dropout3 = nn.Dropout(dropout_rate)  # Dropout layer after third fully connected layer
+        self.fc4 = nn.Linear(32, 24)  # Output layer
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = self.dropout1(x)  # Applying dropout after ReLU activation
+        x = torch.relu(self.fc2(x))
+        x = self.dropout2(x)  # Applying dropout
+        x = torch.relu(self.fc3(x))
+        x = self.dropout3(x)  # Applying dropout
+        x = self.fc4(x)  # No activation function here for classification
         return x
 
 
