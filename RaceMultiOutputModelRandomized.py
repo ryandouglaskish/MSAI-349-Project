@@ -26,7 +26,6 @@ from tqdm import tqdm
 from helpers import *
 
 
-# Define a custom Dataset
 class RaceDataset(Dataset):
     def __init__(self, features, labels):
         self.features = features
@@ -41,10 +40,10 @@ class RaceDataset(Dataset):
 
 
     
-class TwoLayers(nn.Module):
-    def __init__(self):
-            super(TwoLayers, self).__init__()
-            self.fc1 = nn.Linear(240, 128)
+class OneHiddenLayerReg(nn.Module):
+    def __init__(self, input_size=240):
+            super(OneHiddenLayerReg, self).__init__()
+            self.fc1 = nn.Linear(input_size, 128) # 24 drivers x 10 laps
             self.fc2 = nn.Linear(128, 64)
             self.fc3 = nn.Linear(64, 24)  # Output for 24 drivers
 
@@ -54,74 +53,25 @@ class TwoLayers(nn.Module):
         x = self.fc3(x)  # Using raw scores for ranking
         return x
 
-class ThreeLayers(nn.Module):
-    def __init__(self):
-        super(ThreeLayers, self).__init__()
-        self.fc1 = nn.Linear(240, 128) # First hidden layer: 240 input features to 128 neurons
-        self.fc2 = nn.Linear(128, 64)  # Second hidden layer: 128 neurons to 64 neurons
-        self.fc3 = nn.Linear(64, 32)   # Third hidden layer: 64 neurons to 32 neurons
-        self.fc4 = nn.Linear(32, 24)   # Output layer: 32 neurons to 24 outputs (finishing positions)
-
-    def forward(self, x):
-        x = torch.relu(self.fc1(x))  # ReLU activation function after first hidden layer
-        x = torch.relu(self.fc2(x))  # ReLU activation function after second hidden layer
-        x = torch.relu(self.fc3(x))  # ReLU activation function after third hidden layer
-        x = self.fc4(x)              # No activation function in the output layer for regression
-        return x
-    
-class TwoLayersCoef(nn.Module):
-    def __init__(self):
-            super(TwoLayersCoef, self).__init__()
-            self.fc1 = nn.Linear(24+24*5, 128)
-            self.fc2 = nn.Linear(128, 64)
-            self.fc3 = nn.Linear(64, 24)  # Output for 24 drivers
-
-    def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)  # Using raw scores for ranking
-        return x
-
-class ThreeLayersCoef(nn.Module):
-    def __init__(self):
-        super(ThreeLayersCoef, self).__init__()
-        self.fc1 = nn.Linear(24+24*5, 128)
+class TwoHiddenLayerReg(nn.Module):
+    def __init__(self, input_size=240):
+        super(TwoHiddenLayerReg, self).__init__()
+        self.fc1 = nn.Linear(input_size, 128)
         self.fc2 = nn.Linear(128, 64)
-        self.fc3 = nn.Linear(64, 32)
+        self.fc3 = nn.Linear(64, 32) 
         self.fc4 = nn.Linear(32, 24)
 
     def forward(self, x):
-        x = torch.relu(self.fc1(x))  # ReLU activation function after first hidden layer
-        x = torch.relu(self.fc2(x))  # ReLU activation function after second hidden layer
-        x = torch.relu(self.fc3(x))  # ReLU activation function after third hidden layer
-        x = self.fc4(x)              # No activation function in the output layer for regression
-        return x
-    
-class CoefThreeLayersDropoutClassification(nn.Module):
-    def __init__(self, dropout_rate=0.5):
-        super(CoefThreeLayersDropoutClassification, self).__init__()
-        self.fc1 = nn.Linear(24+24*5, 128) 
-        self.dropout1 = nn.Dropout(dropout_rate)  # Dropout layer after first fully connected layer
-        self.fc2 = nn.Linear(128, 64)
-        self.dropout2 = nn.Dropout(dropout_rate)  # Dropout layer after second fully connected layer
-        self.fc3 = nn.Linear(64, 32)
-        self.dropout3 = nn.Dropout(dropout_rate)  # Dropout layer after third fully connected layer
-        self.fc4 = nn.Linear(32, 24)  # Output layer
-
-    def forward(self, x):
         x = torch.relu(self.fc1(x))
-        x = self.dropout1(x)  # Applying dropout after ReLU activation
         x = torch.relu(self.fc2(x))
-        x = self.dropout2(x)  # Applying dropout
         x = torch.relu(self.fc3(x))
-        x = self.dropout3(x)  # Applying dropout
-        x = self.fc4(x)  # No activation function here for classification
+        x = self.fc4(x)
         return x
 
-
-class BinaryTwoLayers(nn.Module):
+    
+class OneHiddenLayerClassification(nn.Module):
     def __init__(self):
-        super(BinaryTwoLayers, self).__init__()
+        super(OneHiddenLayerClassification, self).__init__()
         self.fc1 = nn.Linear(240, 128) # Input layer
         self.fc2 = nn.Linear(128, 64)  # Hidden layer 1
         self.fc3 = nn.Linear(64, 24)   # Output layer (24 positions)
@@ -132,11 +82,10 @@ class BinaryTwoLayers(nn.Module):
         x = self.fc3(x)  # No softmax here; nn.CrossEntropyLoss will apply it
         return x
 
-
-class BinaryThreeLayersDropout(nn.Module):
-    def __init__(self, dropout_rate=0.5):
-        super(BinaryThreeLayersDropout, self).__init__()
-        self.fc1 = nn.Linear(240, 128) 
+class TwoHiddenLayerDropoutClassification(nn.Module):
+    def __init__(self, input_size=240, dropout_rate=0.5):
+        super(TwoHiddenLayerDropoutClassification, self).__init__()
+        self.fc1 = nn.Linear(input_size, 128) 
         self.dropout1 = nn.Dropout(dropout_rate)  # Dropout layer after first fully connected layer
         self.fc2 = nn.Linear(128, 64)
         self.dropout2 = nn.Dropout(dropout_rate)  # Dropout layer after second fully connected layer
@@ -153,73 +102,11 @@ class BinaryThreeLayersDropout(nn.Module):
         x = self.dropout3(x)  # Applying dropout
         x = self.fc4(x)  # No activation function here for classification
         return x
+
     
-
-
-
-class CNNRacePredictionModel(nn.Module):
-    '''
-    If there is spatial correlation in your data, such as patterns across consecutive laps or drivers, a CNN might be able to capture these relationships effectively.
-    '''
-    def __init__(self):
-        super(CNNRacePredictionModel, self).__init__()
-        self.conv1 = nn.Conv1d(24, 64, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv1d(64, 128, kernel_size=3, padding=1)
-        self.fc1 = nn.Linear(128 * 10, 64)  # Adjust depending on the output size of conv2
-        self.fc2 = nn.Linear(64, 24)
-
-    def forward(self, x):
-        x = x.view(-1, 24, 10)  # Reshape to (batch_size, channels, laps)
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = x.view(x.size(0), -1)  # Flatten
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
-
-
-'''
-f the temporal sequence of laps is crucial, and you want to capture the dynamic changes over laps, consider using an RNN or LSTM.
-'''
-class LSTMModel(nn.Module):
-    def __init__(self):
-        super(LSTMModel, self).__init__()
-        self.lstm = nn.LSTM(input_size=24, hidden_size=50, num_layers=2, batch_first=True)
-        self.fc = nn.Linear(50 * 10, 24)  # Assuming 10 time steps
-
-    def forward(self, x):
-        x = x.view(-1, 10, 24)  # Reshape to (batch_size, laps, drivers)
-        x, _ = self.lstm(x)
-        x = x.contiguous().view(x.size(0), -1)
-        x = self.fc(x)
-        return x
-    
-# class PairwiseRankingLoss(nn.Module):
-#     def __init__(self):
-#         super(PairwiseRankingLoss, self).__init__()
-
-#     def forward(self, outputs, targets):
-#         # Assuming outputs and targets are both of shape [batch_size, num_drivers]
-#         # where num_drivers is 24 in your case
-#         batch_size = outputs.size(0)
-#         num_drivers = outputs.size(1)
-
-#         # Initialize loss
-#         loss = 0.0
-
-#         # Compare every pair of drivers
-#         for i in range(num_drivers):
-#             for j in range(i + 1, num_drivers):
-#                 # Calculate the difference in predicted positions
-#                 predicted_diff = outputs[:, i] - outputs[:, j]
-#                 # Calculate the difference in actual positions
-#                 true_diff = targets[:, i] - targets[:, j]
-#                 # Increment loss when the predicted order is wrong
-#                 loss += torch.mean((predicted_diff * true_diff < 0).type(torch.float))
-
-#         return loss / (num_drivers * (num_drivers - 1) / 2)
 
 class WeightedRankingLoss(nn.Module):
+    '''If winner wrong, penalize 5 points. If places 2-9 wrong, penalty is 1. If places 10-24 wrong, no penalty.'''
     def __init__(self, winner_weight=5.0):
         super(WeightedRankingLoss, self).__init__()
         self.winner_weight = winner_weight
@@ -249,38 +136,6 @@ class WeightedRankingLoss(nn.Module):
                     loss += weight * F.relu(torch.sign(outputs[batch, i] - outputs[batch, j]) * torch.sign(torch.tensor(target_i - target_j, dtype=outputs.dtype, device=outputs.device)) - (outputs[batch, i] - outputs[batch, j]) * torch.tensor(target_i - target_j, dtype=outputs.dtype, device=outputs.device))
         return loss / (batch_size * num_drivers * (num_drivers - 1) / 2)
                   
-# def weighted_ranking_loss(predictions, targets, winner_weight=5.0):
-#     """
-#     Custom ranking loss that prioritizes the first position and 
-#     ignores positions 10-24.
-
-#     predictions: The output from the model (batch_size x num_drivers).
-#     targets: The actual finishing positions (batch_size x num_drivers).
-#     winner_weight: The weight to apply for the first position.
-#     """
-#     loss = 0.0
-#     batch_size, num_drivers = predictions.shape
-#     for batch in range(batch_size):
-#         for i in range(num_drivers):
-#             for j in range(i + 1, num_drivers):
-#                 # Access the position of drivers i and j in the current batch
-#                 target_i = targets[batch, i].item()
-#                 target_j = targets[batch, j].item()
-
-#                 # Apply weights based on positions
-#                 weight = 1.0
-#                 if target_i == 1 or target_j == 1:
-#                     weight = winner_weight  # Increase weight for the first position
-#                 elif target_i >= 10 and target_j >= 10:
-#                     weight = 0.0  # Ignore positions 10-24
-
-#                 # Calculate pairwise loss
-#                 predicted_diff = predictions[batch, i] - predictions[batch, j]
-#                 true_diff = torch.tensor(target_i - target_j, dtype=predictions.dtype, device=predictions.device)  # Convert true_diff to a tensor
-#                 loss += weight * F.relu(torch.sign(predicted_diff) * torch.sign(true_diff) - predicted_diff * true_diff)
-
-#     return loss / (batch_size * num_drivers * (num_drivers - 1) / 2)
-
 
 def visualize_training(losses, path=None, save=True):
     plt.figure(figsize=(12, 5))
@@ -300,7 +155,7 @@ def visualize_training(losses, path=None, save=True):
         plt.show()
 
 
-def train_singleoutput_model(path, train_loader, valid_loader, model, epochs=10, load=False, lr=0.001, viz=False):
+def train_classification_model(path, train_loader, valid_loader, model, epochs=10, load=False, lr=0.001, viz=False):
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -405,7 +260,7 @@ def train_singleoutput_model(path, train_loader, valid_loader, model, epochs=10,
 
 
 
-def train_model(path, train_loader, valid_loader, model, criterion, epochs=10, load=False, lr=0.001, viz=False):
+def train_regression_model(path, train_loader, valid_loader, model, criterion, epochs=10, load=False, lr=0.001, viz=False):
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -511,3 +366,44 @@ def train_model(path, train_loader, valid_loader, model, criterion, epochs=10, l
     print('Model saved')
     notify('Training Complete', path.split('/')[-1])
     return performance
+
+def get_model_performance(path):
+    checkpoint = torch.load(f'{path}model.pt')
+    performance = checkpoint['performance']
+    return performance
+
+def get_best_model_performance(path):
+    checkpoint = torch.load(f'{path}model.pt')
+    performance = checkpoint['performance']
+    return performance.iloc[performance['val_fp_acc'].idxmax()]
+
+
+def test_eval(path, test_loader, model, criterion):
+    checkpoint = torch.load(f'{path}model.pt')
+    model.load_state_dict(checkpoint['model_state_dict'])
+ 
+    model.eval()
+
+    test_loss = 0.0
+    correct_first_place_predictions = 0
+    total_races = 0
+
+    with torch.no_grad():
+        for inputs, targets in test_loader:
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
+            test_loss += loss.item()
+
+            # Predicted and actual first-place finishers
+            predicted_first_places = outputs.argmin(dim=1)
+            actual_first_places = targets.argmin(dim=1)
+
+            correct_first_place_predictions += (predicted_first_places == actual_first_places).sum().item()
+            total_races += inputs.size(0)
+
+        average_test_loss = test_loss / len(test_loader)
+
+        # Calculate the accuracy
+        test_fp_acc = correct_first_place_predictions / total_races
+
+    print(f'Loss: {average_test_loss:.4f} | Acc: {test_fp_acc:.6f}')
